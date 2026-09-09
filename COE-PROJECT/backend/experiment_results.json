@@ -1,0 +1,19 @@
+{
+    "baseline": {
+        "tp": 5,
+        "fp": 0,
+        "fn": 2,
+        "tn": 3,
+        "detection_rate": 0.7142857142857143,
+        "false_alert_rate": 0.0
+    },
+    "ai": {
+        "tp": 7,
+        "fp": 0,
+        "fn": 0,
+        "tn": 3,
+        "detection_rate": 1.0,
+        "false_alert_rate": 0.0
+    },
+    "detection_rate_improvement": 0.2857142857142857
+}
