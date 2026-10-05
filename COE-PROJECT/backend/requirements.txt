@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+pydantic
+chromadb
+sentence-transformers
+langgraph
+langchain-groq
+langchain-core
+sqlalchemy
+pyjwt
+passlib[bcrypt]
+python-jose[cryptography]
+python-multipart
+python-dotenv
+pytest
+httpx
+slowapi
