@@ -1,19 +1,1296 @@
 {
+    "total_patients": 170,
+    "evaluated": 104,
+    "llm_failures": [
+        {
+            "patient_id": "p_stable_9",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_stable_14",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_stable_20",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_stable_21",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_stable_22",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_stable_24",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_stable_26",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_stable_30",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_obvious_3",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_obvious_4",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_obvious_7",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_obvious_9",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_obvious_10",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_obvious_12",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_obvious_15",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_obvious_17",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_obvious_18",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_obvious_19",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_obvious_20",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_subtle_4",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_subtle_5",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_subtle_7",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_subtle_8",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_subtle_11",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_subtle_14",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_subtle_16",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_subtle_17",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_subtle_19",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_subtle_22",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_subtle_23",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_subtle_24",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_subtle_27",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_hypoxia_2",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_hypoxia_6",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_hypoxia_7",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_hypoxia_9",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_hypoxia_10",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_hypoxia_12",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_hypoxia_15",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_hypoxia_17",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_hypoxia_20",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_comp_shock_2",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_comp_shock_3",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_comp_shock_5",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_comp_shock_6",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_comp_shock_8",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_comp_shock_9",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_comp_shock_11",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_comp_shock_12",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_comp_shock_14",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_comp_shock_16",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_comp_shock_20",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_bradycardia_1",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_bradycardia_3",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_bradycardia_4",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_bradycardia_5",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_bradycardia_7",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_bradycardia_9",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_elderly_1",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_elderly_6",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_elderly_8",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_elderly_10",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_elderly_11",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_elderly_12",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_elderly_13",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        },
+        {
+            "patient_id": "p_elderly_15",
+            "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+        }
+    ],
     "baseline": {
-        "tp": 5,
+        "tp": 25,
         "fp": 0,
-        "fn": 2,
-        "tn": 3,
-        "detection_rate": 0.7142857142857143,
-        "false_alert_rate": 0.0
+        "fn": 53,
+        "tn": 26,
+        "detection_rate": 0.3205,
+        "detection_rate_ci95": [
+            0.2275,
+            0.4304
+        ],
+        "false_alert_rate": 0.0,
+        "precision": 1.0,
+        "f1_score": 0.4854,
+        "specificity": 1.0
     },
     "ai": {
-        "tp": 7,
+        "tp": 78,
         "fp": 0,
         "fn": 0,
-        "tn": 3,
+        "tn": 26,
         "detection_rate": 1.0,
-        "false_alert_rate": 0.0
+        "detection_rate_ci95": [
+            0.9531,
+            1.0
+        ],
+        "false_alert_rate": 0.0,
+        "precision": 1.0,
+        "f1_score": 1.0,
+        "specificity": 1.0
     },
-    "detection_rate_improvement": 0.2857142857142857
+    "ai_strict": {
+        "tp": 58,
+        "fp": 0,
+        "fn": 20,
+        "tn": 26,
+        "detection_rate": 0.7436,
+        "detection_rate_ci95": [
+            0.6369,
+            0.8274
+        ],
+        "false_alert_rate": 0.0,
+        "precision": 1.0,
+        "f1_score": 0.8529,
+        "specificity": 1.0
+    },
+    "detection_rate_improvement": 0.6795,
+    "false_alert_reduction": 0.0,
+    "f1_improvement": 0.5146,
+    "per_archetype": {
+        "stable": {
+            "ground_truth": "negative",
+            "baseline": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 0,
+                "tn": 22,
+                "detection_rate": 0.0,
+                "detection_rate_ci95": [
+                    0.0,
+                    0.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 0.0,
+                "f1_score": 0.0,
+                "specificity": 1.0
+            },
+            "ai": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 0,
+                "tn": 22,
+                "detection_rate": 0.0,
+                "detection_rate_ci95": [
+                    0.0,
+                    0.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 0.0,
+                "f1_score": 0.0,
+                "specificity": 1.0
+            },
+            "ai_strict": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 0,
+                "tn": 22,
+                "detection_rate": 0.0,
+                "detection_rate_ci95": [
+                    0.0,
+                    0.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 0.0,
+                "f1_score": 0.0,
+                "specificity": 1.0
+            }
+        },
+        "obvious": {
+            "ground_truth": "positive",
+            "baseline": {
+                "tp": 9,
+                "fp": 0,
+                "fn": 0,
+                "tn": 0,
+                "detection_rate": 1.0,
+                "detection_rate_ci95": [
+                    0.7008,
+                    1.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 1.0,
+                "f1_score": 1.0,
+                "specificity": 0.0
+            },
+            "ai": {
+                "tp": 9,
+                "fp": 0,
+                "fn": 0,
+                "tn": 0,
+                "detection_rate": 1.0,
+                "detection_rate_ci95": [
+                    0.7008,
+                    1.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 1.0,
+                "f1_score": 1.0,
+                "specificity": 0.0
+            },
+            "ai_strict": {
+                "tp": 9,
+                "fp": 0,
+                "fn": 0,
+                "tn": 0,
+                "detection_rate": 1.0,
+                "detection_rate_ci95": [
+                    0.7008,
+                    1.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 1.0,
+                "f1_score": 1.0,
+                "specificity": 0.0
+            }
+        },
+        "subtle": {
+            "ground_truth": "positive",
+            "baseline": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 17,
+                "tn": 0,
+                "detection_rate": 0.0,
+                "detection_rate_ci95": [
+                    0.0,
+                    0.1843
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 0.0,
+                "f1_score": 0.0,
+                "specificity": 0.0
+            },
+            "ai": {
+                "tp": 17,
+                "fp": 0,
+                "fn": 0,
+                "tn": 0,
+                "detection_rate": 1.0,
+                "detection_rate_ci95": [
+                    0.8157,
+                    1.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 1.0,
+                "f1_score": 1.0,
+                "specificity": 0.0
+            },
+            "ai_strict": {
+                "tp": 17,
+                "fp": 0,
+                "fn": 0,
+                "tn": 0,
+                "detection_rate": 1.0,
+                "detection_rate_ci95": [
+                    0.8157,
+                    1.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 1.0,
+                "f1_score": 1.0,
+                "specificity": 0.0
+            }
+        },
+        "missing": {
+            "ground_truth": "positive",
+            "baseline": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 20,
+                "tn": 0,
+                "detection_rate": 0.0,
+                "detection_rate_ci95": [
+                    0.0,
+                    0.1611
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 0.0,
+                "f1_score": 0.0,
+                "specificity": 0.0
+            },
+            "ai": {
+                "tp": 20,
+                "fp": 0,
+                "fn": 0,
+                "tn": 0,
+                "detection_rate": 1.0,
+                "detection_rate_ci95": [
+                    0.8389,
+                    1.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 1.0,
+                "f1_score": 1.0,
+                "specificity": 0.0
+            },
+            "ai_strict": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 20,
+                "tn": 0,
+                "detection_rate": 0.0,
+                "detection_rate_ci95": [
+                    0.0,
+                    0.1611
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 0.0,
+                "f1_score": 0.0,
+                "specificity": 0.0
+            }
+        },
+        "hypoxia": {
+            "ground_truth": "positive",
+            "baseline": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 11,
+                "tn": 0,
+                "detection_rate": 0.0,
+                "detection_rate_ci95": [
+                    0.0,
+                    0.2588
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 0.0,
+                "f1_score": 0.0,
+                "specificity": 0.0
+            },
+            "ai": {
+                "tp": 11,
+                "fp": 0,
+                "fn": 0,
+                "tn": 0,
+                "detection_rate": 1.0,
+                "detection_rate_ci95": [
+                    0.7412,
+                    1.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 1.0,
+                "f1_score": 1.0,
+                "specificity": 0.0
+            },
+            "ai_strict": {
+                "tp": 11,
+                "fp": 0,
+                "fn": 0,
+                "tn": 0,
+                "detection_rate": 1.0,
+                "detection_rate_ci95": [
+                    0.7412,
+                    1.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 1.0,
+                "f1_score": 1.0,
+                "specificity": 0.0
+            }
+        },
+        "comp_shock": {
+            "ground_truth": "positive",
+            "baseline": {
+                "tp": 9,
+                "fp": 0,
+                "fn": 0,
+                "tn": 0,
+                "detection_rate": 1.0,
+                "detection_rate_ci95": [
+                    0.7008,
+                    1.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 1.0,
+                "f1_score": 1.0,
+                "specificity": 0.0
+            },
+            "ai": {
+                "tp": 9,
+                "fp": 0,
+                "fn": 0,
+                "tn": 0,
+                "detection_rate": 1.0,
+                "detection_rate_ci95": [
+                    0.7008,
+                    1.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 1.0,
+                "f1_score": 1.0,
+                "specificity": 0.0
+            },
+            "ai_strict": {
+                "tp": 9,
+                "fp": 0,
+                "fn": 0,
+                "tn": 0,
+                "detection_rate": 1.0,
+                "detection_rate_ci95": [
+                    0.7008,
+                    1.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 1.0,
+                "f1_score": 1.0,
+                "specificity": 0.0
+            }
+        },
+        "bradycardia": {
+            "ground_truth": "negative",
+            "baseline": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 0,
+                "tn": 4,
+                "detection_rate": 0.0,
+                "detection_rate_ci95": [
+                    0.0,
+                    0.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 0.0,
+                "f1_score": 0.0,
+                "specificity": 1.0
+            },
+            "ai": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 0,
+                "tn": 4,
+                "detection_rate": 0.0,
+                "detection_rate_ci95": [
+                    0.0,
+                    0.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 0.0,
+                "f1_score": 0.0,
+                "specificity": 1.0
+            },
+            "ai_strict": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 0,
+                "tn": 4,
+                "detection_rate": 0.0,
+                "detection_rate_ci95": [
+                    0.0,
+                    0.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 0.0,
+                "f1_score": 0.0,
+                "specificity": 1.0
+            }
+        },
+        "elderly": {
+            "ground_truth": "positive",
+            "baseline": {
+                "tp": 7,
+                "fp": 0,
+                "fn": 5,
+                "tn": 0,
+                "detection_rate": 0.5833,
+                "detection_rate_ci95": [
+                    0.3195,
+                    0.8067
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 1.0,
+                "f1_score": 0.7368,
+                "specificity": 0.0
+            },
+            "ai": {
+                "tp": 12,
+                "fp": 0,
+                "fn": 0,
+                "tn": 0,
+                "detection_rate": 1.0,
+                "detection_rate_ci95": [
+                    0.7575,
+                    1.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 1.0,
+                "f1_score": 1.0,
+                "specificity": 0.0
+            },
+            "ai_strict": {
+                "tp": 12,
+                "fp": 0,
+                "fn": 0,
+                "tn": 0,
+                "detection_rate": 1.0,
+                "detection_rate_ci95": [
+                    0.7575,
+                    1.0
+                ],
+                "false_alert_rate": 0.0,
+                "precision": 1.0,
+                "f1_score": 1.0,
+                "specificity": 0.0
+            }
+        }
+    },
+    "holdout": {
+        "total_patients": 80,
+        "evaluated": 42,
+        "llm_failures": [
+            {
+                "patient_id": "h_septic_atypical_1",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_septic_atypical_3",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_septic_atypical_4",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_septic_atypical_5",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_septic_atypical_6",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_septic_atypical_9",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_bleed_2",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_bleed_3",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_bleed_4",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_bleed_5",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_bleed_8",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_resp_decline_1",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_resp_decline_2",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_resp_decline_4",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_resp_decline_7",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_resp_decline_8",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_resp_decline_10",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_overdose_1",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_overdose_2",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_overdose_5",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_overdose_6",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_overdose_8",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_anxious_1",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_anxious_3",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_anxious_7",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_anxious_8",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_fever_settling_2",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_fever_settling_6",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_fever_settling_9",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_fever_settling_10",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_copd_baseline_1",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_copd_baseline_4",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_copd_baseline_5",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_copd_baseline_7",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_copd_baseline_9",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_well_fit_1",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_well_fit_2",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            },
+            {
+                "patient_id": "h_well_fit_3",
+                "reason": "LLM API Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0hpemwqekcs0k588evzsdr9` serv"
+            }
+        ],
+        "baseline": {
+            "tp": 10,
+            "fp": 0,
+            "fn": 8,
+            "tn": 24,
+            "detection_rate": 0.5556,
+            "detection_rate_ci95": [
+                0.3372,
+                0.7544
+            ],
+            "false_alert_rate": 0.0,
+            "precision": 1.0,
+            "f1_score": 0.7143,
+            "specificity": 1.0
+        },
+        "ai": {
+            "tp": 18,
+            "fp": 7,
+            "fn": 0,
+            "tn": 17,
+            "detection_rate": 1.0,
+            "detection_rate_ci95": [
+                0.8241,
+                1.0
+            ],
+            "false_alert_rate": 0.2917,
+            "precision": 0.72,
+            "f1_score": 0.8372,
+            "specificity": 0.7083
+        },
+        "ai_strict": {
+            "tp": 18,
+            "fp": 7,
+            "fn": 0,
+            "tn": 17,
+            "detection_rate": 1.0,
+            "detection_rate_ci95": [
+                0.8241,
+                1.0
+            ],
+            "false_alert_rate": 0.2917,
+            "precision": 0.72,
+            "f1_score": 0.8372,
+            "specificity": 0.7083
+        },
+        "detection_rate_improvement": 0.4444,
+        "false_alert_reduction": -0.2917,
+        "f1_improvement": 0.1229,
+        "per_archetype": {
+            "septic_atypical": {
+                "ground_truth": "positive",
+                "baseline": {
+                    "tp": 4,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 0,
+                    "detection_rate": 1.0,
+                    "detection_rate_ci95": [
+                        0.5101,
+                        1.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 1.0,
+                    "f1_score": 1.0,
+                    "specificity": 0.0
+                },
+                "ai": {
+                    "tp": 4,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 0,
+                    "detection_rate": 1.0,
+                    "detection_rate_ci95": [
+                        0.5101,
+                        1.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 1.0,
+                    "f1_score": 1.0,
+                    "specificity": 0.0
+                },
+                "ai_strict": {
+                    "tp": 4,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 0,
+                    "detection_rate": 1.0,
+                    "detection_rate_ci95": [
+                        0.5101,
+                        1.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 1.0,
+                    "f1_score": 1.0,
+                    "specificity": 0.0
+                }
+            },
+            "bleed": {
+                "ground_truth": "positive",
+                "baseline": {
+                    "tp": 0,
+                    "fp": 0,
+                    "fn": 5,
+                    "tn": 0,
+                    "detection_rate": 0.0,
+                    "detection_rate_ci95": [
+                        0.0,
+                        0.4345
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 0.0,
+                    "f1_score": 0.0,
+                    "specificity": 0.0
+                },
+                "ai": {
+                    "tp": 5,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 0,
+                    "detection_rate": 1.0,
+                    "detection_rate_ci95": [
+                        0.5655,
+                        1.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 1.0,
+                    "f1_score": 1.0,
+                    "specificity": 0.0
+                },
+                "ai_strict": {
+                    "tp": 5,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 0,
+                    "detection_rate": 1.0,
+                    "detection_rate_ci95": [
+                        0.5655,
+                        1.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 1.0,
+                    "f1_score": 1.0,
+                    "specificity": 0.0
+                }
+            },
+            "resp_decline": {
+                "ground_truth": "positive",
+                "baseline": {
+                    "tp": 3,
+                    "fp": 0,
+                    "fn": 1,
+                    "tn": 0,
+                    "detection_rate": 0.75,
+                    "detection_rate_ci95": [
+                        0.3006,
+                        0.9544
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 1.0,
+                    "f1_score": 0.8571,
+                    "specificity": 0.0
+                },
+                "ai": {
+                    "tp": 4,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 0,
+                    "detection_rate": 1.0,
+                    "detection_rate_ci95": [
+                        0.5101,
+                        1.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 1.0,
+                    "f1_score": 1.0,
+                    "specificity": 0.0
+                },
+                "ai_strict": {
+                    "tp": 4,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 0,
+                    "detection_rate": 1.0,
+                    "detection_rate_ci95": [
+                        0.5101,
+                        1.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 1.0,
+                    "f1_score": 1.0,
+                    "specificity": 0.0
+                }
+            },
+            "overdose": {
+                "ground_truth": "positive",
+                "baseline": {
+                    "tp": 3,
+                    "fp": 0,
+                    "fn": 2,
+                    "tn": 0,
+                    "detection_rate": 0.6,
+                    "detection_rate_ci95": [
+                        0.2307,
+                        0.8824
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 1.0,
+                    "f1_score": 0.75,
+                    "specificity": 0.0
+                },
+                "ai": {
+                    "tp": 5,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 0,
+                    "detection_rate": 1.0,
+                    "detection_rate_ci95": [
+                        0.5655,
+                        1.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 1.0,
+                    "f1_score": 1.0,
+                    "specificity": 0.0
+                },
+                "ai_strict": {
+                    "tp": 5,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 0,
+                    "detection_rate": 1.0,
+                    "detection_rate_ci95": [
+                        0.5655,
+                        1.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 1.0,
+                    "f1_score": 1.0,
+                    "specificity": 0.0
+                }
+            },
+            "anxious": {
+                "ground_truth": "negative",
+                "baseline": {
+                    "tp": 0,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 6,
+                    "detection_rate": 0.0,
+                    "detection_rate_ci95": [
+                        0.0,
+                        0.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 0.0,
+                    "f1_score": 0.0,
+                    "specificity": 1.0
+                },
+                "ai": {
+                    "tp": 0,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 6,
+                    "detection_rate": 0.0,
+                    "detection_rate_ci95": [
+                        0.0,
+                        0.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 0.0,
+                    "f1_score": 0.0,
+                    "specificity": 1.0
+                },
+                "ai_strict": {
+                    "tp": 0,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 6,
+                    "detection_rate": 0.0,
+                    "detection_rate_ci95": [
+                        0.0,
+                        0.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 0.0,
+                    "f1_score": 0.0,
+                    "specificity": 1.0
+                }
+            },
+            "fever_settling": {
+                "ground_truth": "negative",
+                "baseline": {
+                    "tp": 0,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 6,
+                    "detection_rate": 0.0,
+                    "detection_rate_ci95": [
+                        0.0,
+                        0.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 0.0,
+                    "f1_score": 0.0,
+                    "specificity": 1.0
+                },
+                "ai": {
+                    "tp": 0,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 6,
+                    "detection_rate": 0.0,
+                    "detection_rate_ci95": [
+                        0.0,
+                        0.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 0.0,
+                    "f1_score": 0.0,
+                    "specificity": 1.0
+                },
+                "ai_strict": {
+                    "tp": 0,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 6,
+                    "detection_rate": 0.0,
+                    "detection_rate_ci95": [
+                        0.0,
+                        0.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 0.0,
+                    "f1_score": 0.0,
+                    "specificity": 1.0
+                }
+            },
+            "copd_baseline": {
+                "ground_truth": "negative",
+                "baseline": {
+                    "tp": 0,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 5,
+                    "detection_rate": 0.0,
+                    "detection_rate_ci95": [
+                        0.0,
+                        0.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 0.0,
+                    "f1_score": 0.0,
+                    "specificity": 1.0
+                },
+                "ai": {
+                    "tp": 0,
+                    "fp": 5,
+                    "fn": 0,
+                    "tn": 0,
+                    "detection_rate": 0.0,
+                    "detection_rate_ci95": [
+                        0.0,
+                        0.0
+                    ],
+                    "false_alert_rate": 1.0,
+                    "precision": 0.0,
+                    "f1_score": 0.0,
+                    "specificity": 0.0
+                },
+                "ai_strict": {
+                    "tp": 0,
+                    "fp": 5,
+                    "fn": 0,
+                    "tn": 0,
+                    "detection_rate": 0.0,
+                    "detection_rate_ci95": [
+                        0.0,
+                        0.0
+                    ],
+                    "false_alert_rate": 1.0,
+                    "precision": 0.0,
+                    "f1_score": 0.0,
+                    "specificity": 0.0
+                }
+            },
+            "well_fit": {
+                "ground_truth": "negative",
+                "baseline": {
+                    "tp": 0,
+                    "fp": 0,
+                    "fn": 0,
+                    "tn": 7,
+                    "detection_rate": 0.0,
+                    "detection_rate_ci95": [
+                        0.0,
+                        0.0
+                    ],
+                    "false_alert_rate": 0.0,
+                    "precision": 0.0,
+                    "f1_score": 0.0,
+                    "specificity": 1.0
+                },
+                "ai": {
+                    "tp": 0,
+                    "fp": 2,
+                    "fn": 0,
+                    "tn": 5,
+                    "detection_rate": 0.0,
+                    "detection_rate_ci95": [
+                        0.0,
+                        0.0
+                    ],
+                    "false_alert_rate": 0.2857,
+                    "precision": 0.0,
+                    "f1_score": 0.0,
+                    "specificity": 0.7143
+                },
+                "ai_strict": {
+                    "tp": 0,
+                    "fp": 2,
+                    "fn": 0,
+                    "tn": 5,
+                    "detection_rate": 0.0,
+                    "detection_rate_ci95": [
+                        0.0,
+                        0.0
+                    ],
+                    "false_alert_rate": 0.2857,
+                    "precision": 0.0,
+                    "f1_score": 0.0,
+                    "specificity": 0.7143
+                }
+            }
+        }
+    }
 }

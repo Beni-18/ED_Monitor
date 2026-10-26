@@ -344,3 +344,31 @@ COE-PROJECT/
         ├── page.module.css            # Dark theme styles
         └── globals.css
 ```
+
+---
+
+### ✅ Phase 21 — Final Audit & Hardening — **COMPLETED**
+- **Auth:** `/api/patients*`, `/api/evaluate/{id}`, `/api/escalations`, `/api/metrics` and `/ws/vitals` now require a valid JWT (WebSocket via `?token=`).
+- **Rate limiting:** login limiter rewritten with slowapi's `@limiter.limit` (the previous `limiter.check` call does not exist and would have returned 429 for every login once slowapi was installed).
+- **Chatbot guardrail:** off-topic filter matches whole words only (previously "cardiac care" / "who is the highest risk patient" were refused).
+- **Escalations:** re-evaluating a patient no longer stacks duplicate pending escalations; approve/reject return 409 if already resolved; unknown patient returns 404.
+- **Admin:** role restricted to Doctor/Nurse/Admin, minimum password length 8.
+- **Simulator:** LangGraph call moved off the event loop, risk level is always committed, observation history capped at 30 per patient.
+- **Profiling:** batch evaluations now record latency/tokens (shared `run_evaluation` helper).
+- **Frontend:** `Unknown` risk gets its own badge/filter/chart bar; hard-coded fake metric fallbacks (92% / 60% / +32%) replaced with `--`; stray `0` in inbox cards fixed; any 401 returns to login.
+- **Docker/ops:** Node 22 image, `NEXT_PUBLIC_API_BASE` passed as a build arg, SQLite/Chroma stored in a directory volume (`DATABASE_URL`, `CHROMA_DB_PATH`), `.dockerignore` files, `boot.sh` no longer overrides the real Groq key, `bcrypt` pinned for passlib compatibility.
+- **Tests:** API tests use an isolated temp DB and run the app lifespan (they previously only passed against a pre-seeded local DB); 42 tests pass offline.
+
+---
+
+### ✅ Phase 22 — Concurrency, Honest Benchmark & Component Frontend — **COMPLETED**
+- **Background batch evaluation:** `POST /api/evaluate/batch` now returns `202` with a job; `GET /api/evaluate/batch/{job_id}` reports `completed/total` and the final result (evaluated, per-risk counts incl. `unknown_risk_count`, `failed_count`, escalations created). Patients are evaluated on a worker pool (`BATCH_WORKERS`, default 8); a second click joins the running job. The dashboard shows live progress.
+- **Groq rate-limit guard (`llm_limits.py`):** all LLM calls share a rolling 60 s token budget (`GROQ_TPM_LIMIT`, default 8000 = free tier) and retry 429s after the cool-down Groq asks for. Previously concurrent evaluation produced 429s that were recorded as failed evaluations. Set `GROQ_TPM_LIMIT` higher on a paid tier to evaluate faster.
+- **Real token accounting:** `tokens_used` now comes from Groq's usage metadata (0 when no LLM call was made) instead of a character-count guess. `gpt-oss` reasoning effort is configurable (`GROQ_REASONING_EFFORT`, default `medium`; `low` saves ~3x output tokens but sometimes skips the structured-output tool call, which is retried).
+- **Shared Chroma client:** the vector store caches its client, embedding model and collection (thread-safe) instead of rebuilding them on every query.
+- **Benchmark (`experiment.py`) rewritten:** evaluates the development archetypes **and** a randomised hold-out set (`dataset.generate_holdout_patients`: different archetypes, noise and note wording, with hard negatives such as anxious tachycardia, settling fever, chronic COPD). Reports detection rate with 95% Wilson intervals, false-alert rate, precision, F1 per archetype, plus an `ai_strict` operating point that does not count `Unknown` as a detection. Evaluations whose LLM call failed are excluded and listed under `llm_failures` instead of counting as detections. Refuses to run without `GROQ_API_KEY`, loads `.env`, and records model/config in the results file. Run with `python experiment.py [--dev-scale N]`.
+- **Frontend split:** the 1,500-line `page.js` is now a 90-line composition of `hooks/` (`useAuth`, `useWard`) and `components/` (views, chat, charts, shared `EscalationCard`/`RiskBadge`), with CSS classes instead of inline styles.
+- **Responsive layout:** breakpoints at 1200 / 900 / 520 px — sidebar becomes a scrollable top nav on tablets/phones, grids collapse, tables scroll horizontally, chat becomes a bottom sheet. No horizontal page scroll down to 375 px.
+- **UI behaviour:** live-feed auto-reconnect and status indicator, header reports whether the LLM is actually enabled (`/api/health.llm_enabled`), accessible nav buttons, delete-user confirmation, own-account delete disabled, metrics panel shows hold-out vs dev results with confidence intervals.
+- **Tests:** 46 tests (batch job lifecycle, throttle, 429 parsing added); `conftest.py` exits cleanly after pytest's summary to avoid an intermittent onnxruntime abort (exit 134) at interpreter teardown.
+

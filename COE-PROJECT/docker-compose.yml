@@ -5,22 +5,27 @@ services:
       - "8000:8000"
     environment:
       - GROQ_API_KEY=${GROQ_API_KEY}
-      - SECRET_KEY=${SECRET_KEY}
+      - SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY in your environment or a .env file next to this file}
+      - DATABASE_URL=sqlite:////app/data/ed_monitor.db
+      - CHROMA_DB_PATH=/app/data/chroma_db
     volumes:
-      - ./backend/chroma_db:/app/chroma_db
-      - ed_monitor_db:/app/ed_monitor.db
+      # Directory volume: SQLite needs a directory it can create journal files in
+      - ed_monitor_data:/app/data
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        # NEXT_PUBLIC_* values are inlined at build time and used by the BROWSER,
+        # so this must be a URL reachable from the user's machine, not the Docker
+        # service name.
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
     ports:
       - "3000:3000"
-    environment:
-      # Points to the backend Docker service name, not localhost
-      - NEXT_PUBLIC_API_BASE=http://backend:8000
     depends_on:
       - backend
     restart: unless-stopped
 
 volumes:
-  ed_monitor_db:
+  ed_monitor_data:

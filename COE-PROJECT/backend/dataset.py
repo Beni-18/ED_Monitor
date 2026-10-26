@@ -336,6 +336,122 @@ def generate_patients(scale_factor: int = 1) -> list[Patient]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# HOLD-OUT EVALUATION SET
+# The development archetypes above are deterministic templates that the agent,
+# guidelines and prompt were all tuned against. This set is a separate benchmark:
+# every patient is randomised (trajectory size, noise, note wording), the
+# archetypes are different, and it includes hard negatives (anxious, settling
+# fever, chronic COPD) that look abnormal in isolation but are not deteriorating.
+# Labels come from the construction of each trajectory, not from model output.
+# ─────────────────────────────────────────────────────────────────────────────
+HOLDOUT_POSITIVE = {"septic_atypical", "bleed", "resp_decline", "overdose"}
+HOLDOUT_NEGATIVE = {"anxious", "fever_settling", "copd_baseline", "well_fit"}
+
+
+def generate_holdout_patients(per_archetype: int = 10, seed: int = 2026) -> list[Patient]:
+    rng = random.Random(seed)  # private RNG: never touches the global random state
+    base_time = datetime.now() - timedelta(hours=24)
+    first = [n for n in _FIRST_NAMES]
+    last = [n for n in _LAST_NAMES]
+
+    def lerp(a, b, frac):
+        return a + (b - a) * frac
+
+    # name -> (notes variants early, notes variants late, vitals(frac, k, rng) -> VitalSigns)
+    def v(hr, sbp, rr, temp, spo2, avpu="A"):
+        return VitalSigns(
+            hr=int(round(hr)), bp_systolic=int(round(sbp)), bp_diastolic=int(round(sbp * 0.62)),
+            resp_rate=int(round(rr)), temp=round(temp, 1), spo2=round(min(spo2, 100.0), 1),
+            consciousness_level=avpu
+        )
+
+    archetypes = {
+        "septic_atypical": dict(
+            early=["Settled on the ward, taking sips of fluid.", "Comfortable, chatty with visitors."],
+            late=["Drowsier than at handover, poor oral intake, hands feel cool.",
+                  "Daughter says more muddled than this morning. Not drinking."],
+            vitals=lambda f, k, r: v(lerp(80, 80 + 24 * k, f) + r.gauss(0, 2), lerp(126, 126 - 22 * k, f) + r.gauss(0, 3),
+                                     lerp(15, 15 + 7 * k, f) + r.gauss(0, 0.7), lerp(36.8, 36.8 - 1.2 * k, f) + r.gauss(0, 0.1),
+                                     lerp(97.5, 97.5 - 2.5 * k, f) + r.gauss(0, 0.3)),
+        ),
+        "bleed": dict(
+            early=["Mild abdominal discomfort, otherwise well.", "Resting, reports some indigestion."],
+            late=["Looks pale, dizzy when sitting forward. Stool noted to be dark.",
+                  "Clammy, light-headed on standing, dark stool this afternoon."],
+            vitals=lambda f, k, r: v(lerp(72, 72 + 26 * k, f) + r.gauss(0, 2), lerp(132, 132 - 30 * k, f) + r.gauss(0, 3),
+                                     lerp(15, 15 + 4 * k, f) + r.gauss(0, 0.6), 36.8 + r.gauss(0, 0.15),
+                                     98 + r.gauss(0, 0.4)),
+        ),
+        "resp_decline": dict(
+            early=["Coughing a little, sitting up in bed.", "Chest feels tight but managing."],
+            late=["Tired, needs to pause between sentences, prefers to stay upright.",
+                  "Short of breath on moving, has stopped eating lunch."],
+            vitals=lambda f, k, r: v(lerp(80, 80 + 16 * k, f) + r.gauss(0, 2), 124 + r.gauss(0, 4),
+                                     lerp(16, 16 + 10 * k, f) + r.gauss(0, 0.7), lerp(37.0, 37.0 + 0.8 * k, f) + r.gauss(0, 0.15),
+                                     lerp(97, 97 - 5 * k, f) + r.gauss(0, 0.3)),
+        ),
+        "overdose": dict(
+            early=["Reports taking regular pain medication, alert and talkative.", "Mildly drowsy but orientated."],
+            late=["Increasingly sleepy, takes effort to rouse for observations.",
+                  "Slow to respond, eyes closing mid-conversation."],
+            vitals=lambda f, k, r: v(lerp(74, 74 - 20 * k, f) + r.gauss(0, 2), 122 + r.gauss(0, 4),
+                                     lerp(14, 14 - 6 * k, f) + r.gauss(0, 0.5), 36.6 + r.gauss(0, 0.15),
+                                     lerp(98, 98 - 6 * k, f) + r.gauss(0, 0.3),
+                                     avpu="V" if f > 0.7 and k > 0.6 else "A"),
+        ),
+        "anxious": dict(
+            early=["Anxious about results, breathing quickly when talking.", "Worried, pacing; settles when reassured."],
+            late=["Calmer after explanation but still a little tense.", "Anxious, hyperventilating briefly then settles."],
+            vitals=lambda f, k, r: v(100 + r.gauss(0, 4), 134 + r.gauss(0, 5), 19 + r.gauss(0, 1),
+                                     36.8 + r.gauss(0, 0.15), 98.3 + r.gauss(0, 0.4)),
+        ),
+        "fever_settling": dict(
+            early=["Febrile with chills, given paracetamol.", "Hot and flushed, encouraging fluids."],
+            late=["Fever coming down, feeling better, eating a little.", "Much more comfortable, temperature settling."],
+            vitals=lambda f, k, r: v(lerp(106, 84, f) + r.gauss(0, 2), 122 + r.gauss(0, 4),
+                                     lerp(21, 16, f) + r.gauss(0, 0.6), lerp(38.7, 37.3, f) + r.gauss(0, 0.15),
+                                     97.5 + r.gauss(0, 0.3)),
+        ),
+        "copd_baseline": dict(
+            early=["Known COPD, on 2L oxygen, at baseline.", "Chronic lung disease, usual breathless state."],
+            late=["Stable on usual oxygen, no change from baseline.", "COPD at baseline, sleeping comfortably."],
+            vitals=lambda f, k, r: v(86 + r.gauss(0, 3), 128 + r.gauss(0, 4), 19 + r.gauss(0, 0.8),
+                                     36.9 + r.gauss(0, 0.15), 91.5 + r.gauss(0, 0.5)),
+        ),
+        "well_fit": dict(
+            early=["Comfortable, mobilising independently.", "Resting, no complaints."],
+            late=["Ready for discharge planning, eating well.", "Comfortable, no concerns overnight."],
+            vitals=lambda f, k, r: v(72 + r.gauss(0, 8), 122 + r.gauss(0, 8), 15 + r.gauss(0, 1.5),
+                                     36.8 + r.gauss(0, 0.25), 97.8 + r.gauss(0, 0.8)),
+        ),
+    }
+
+    patients = []
+    for name, cfg in archetypes.items():
+        for i in range(1, per_archetype + 1):
+            pid = f"h_{name}_{i}"
+            severity = rng.uniform(0.75, 1.3)  # how far this patient's trajectory goes
+            obs = []
+            for j in range(6):
+                f = j / 5
+                late = j >= 4
+                obs.append(PatientObservation(
+                    patient_id=pid,
+                    timestamp=base_time + timedelta(hours=j * 2),
+                    vitals=cfg["vitals"](f, severity, rng),
+                    nursing_notes=rng.choice(cfg["late"] if late else cfg["early"]),
+                ))
+            patients.append(Patient(
+                patient_id=pid,
+                name=f"{rng.choice(first)} {rng.choice(last)}",
+                bed_number=f"H{name[:2].upper()}{i}",
+                admission_time=base_time,
+                observations=obs,
+            ))
+    return patients
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # CLINICAL GUIDELINES (25 total — 15 original + 10 new for new archetypes)
 # Embedded in ChromaDB as RAG context for the LangGraph retrieve_context node.
 # ─────────────────────────────────────────────────────────────────────────────

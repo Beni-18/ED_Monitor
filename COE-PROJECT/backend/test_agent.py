@@ -10,7 +10,6 @@ Run with: pytest test_agent.py -v
 import pytest
 import os
 from datetime import datetime, timedelta
-from unittest.mock import patch
 
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
@@ -316,3 +315,79 @@ class TestAnalyzeTrends:
         state = {"patient": patient, "current_obs": obs_list[-1], "node_timings": {}}
         result = analyze_trends(state)
         assert "analyze_trends" in result["node_timings"]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GROQ RATE-LIMIT GUARD (llm_limits.py)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def test_token_budget_blocks_until_window_frees(monkeypatch):
+    """A call that would exceed the rolling budget waits instead of being sent."""
+    import llm_limits
+    clock = {"t": 1000.0}
+    sleeps = []
+
+    def fake_sleep(s):
+        sleeps.append(s)
+        clock["t"] += 31  # time passes while we wait
+
+    monkeypatch.setattr(llm_limits.time, "monotonic", lambda: clock["t"])
+    monkeypatch.setattr(llm_limits.time, "sleep", fake_sleep)
+
+    b = llm_limits.TokenBudget(tpm=1000, fraction=1.0)
+    b.acquire(600)
+    assert sleeps == []
+    b.acquire(600)  # 600 + 600 > 1000 -> must wait for the first entry to age out
+    assert sleeps, "second acquire should have slept"
+
+
+def test_token_budget_settle_releases_unused_reservation():
+    import llm_limits
+    b = llm_limits.TokenBudget(tpm=1000, fraction=1.0)
+    first = b.acquire(900)
+    b.settle(first, 100)  # call really used only 100 tokens
+    b.acquire(800)  # fits now without waiting (100 + 800 <= 1000)
+
+
+def test_retry_after_parsing():
+    from llm_limits import retry_after_seconds
+    err = Exception("Error code: 429 - Rate limit reached ... Please try again in 10.38s. Need more tokens?")
+    assert retry_after_seconds(err) == pytest.approx(10.38)
+    assert retry_after_seconds(Exception("429 rate_limit_exceeded try again in 1m2.5s")) == pytest.approx(62.5)
+    assert retry_after_seconds(Exception("429 rate_limit_exceeded")) == 5.0
+    assert retry_after_seconds(Exception("connection reset")) is None
+
+
+def test_invoke_with_budget_retries_tool_use_failed(monkeypatch):
+    import agent
+    monkeypatch.setattr(agent.time, "sleep", lambda s: None)
+
+    class Flaky:
+        calls = 0
+
+        def invoke(self, inputs):
+            Flaky.calls += 1
+            if Flaky.calls < 3:
+                raise Exception("Error code: 400 - tool_use_failed: model did not call a tool")
+            return "ok"
+
+    result, tokens = agent.invoke_with_budget(Flaky(), {})
+    assert result == "ok" and Flaky.calls == 3 and tokens == 0
+
+
+def test_invoke_with_budget_fails_fast_on_long_rate_limit(monkeypatch):
+    """A daily-quota 429 asking for minutes must raise, not block the request."""
+    import agent
+    slept = []
+    monkeypatch.setattr(agent.time, "sleep", lambda s: slept.append(s))
+
+    class Quota:
+        calls = 0
+
+        def invoke(self, inputs):
+            Quota.calls += 1
+            raise Exception("Error code: 429 rate_limit_exceeded on tokens per day. Please try again in 6m46.9s.")
+
+    with pytest.raises(Exception, match="429"):
+        agent.invoke_with_budget(Quota(), {})
+    assert Quota.calls == 1 and slept == []

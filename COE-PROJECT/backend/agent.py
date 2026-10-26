@@ -13,8 +13,9 @@ Every node records its own execution time (perf_counter) into state["node_timing
 producing a per-node latency breakdown that is attached to the final AgentRecommendation.
 """
 import os
+import re
 import time
-from typing import TypedDict, List, Optional, Dict
+from typing import TypedDict, List, Dict
 from langgraph.graph import StateGraph, END
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
@@ -22,6 +23,53 @@ from langchain_groq import ChatGroq
 from models import Patient, PatientObservation, AgentRecommendation
 from baseline import calculate_news2
 from vector_store import retrieve_similar_cases
+from llm_limits import budget, retry_after_seconds
+
+
+GROQ_MODEL = "openai/gpt-oss-120b"
+# gpt-oss is a reasoning model. "low" uses ~3x fewer tokens but sometimes answers in prose
+# instead of calling the structured-output tool (Groq 400 tool_use_failed), so default to
+# "medium"; set GROQ_REASONING_EFFORT=low only if you accept more retries.
+REASONING_EFFORT = os.environ.get("GROQ_REASONING_EFFORT", "medium")
+MAX_LLM_ATTEMPTS = 4
+# Never hold a request open longer than this waiting out a rate limit (e.g. the daily quota
+# asks for minutes); fail fast and let the caller report it instead.
+MAX_RETRY_WAIT_SECONDS = 30
+
+
+def make_llm() -> ChatGroq:
+    # Retries are handled by invoke_with_budget so they respect the shared token budget
+    return ChatGroq(model=GROQ_MODEL, temperature=0.1, reasoning_effort=REASONING_EFFORT, max_retries=0)
+
+
+def invoke_with_budget(runnable, inputs):
+    """
+    Invoke an LLM chain inside the shared TPM budget. Returns (result, total_tokens_used).
+    Retries 429s after the cool-down Groq asks for; raises the last error otherwise.
+    """
+    last_error = None
+    for attempt in range(MAX_LLM_ATTEMPTS):
+        reservation = budget.acquire()
+        try:
+            result = runnable.invoke(inputs)
+            raw = result["raw"] if isinstance(result, dict) and "raw" in result else result
+            usage = getattr(raw, "usage_metadata", None) or {}
+            used = usage.get("total_tokens", 0)
+            budget.settle(reservation, used or reservation[1])
+            return result, used
+        except Exception as e:
+            budget.settle(reservation, 0)
+            last_error = e
+            if "tool_use_failed" in str(e):
+                wait = 0.5  # model skipped the structured-output tool call; just ask again
+            else:
+                wait = retry_after_seconds(e)
+                if wait is not None and wait <= MAX_RETRY_WAIT_SECONDS:
+                    budget.penalise(wait)
+            if wait is None or wait > MAX_RETRY_WAIT_SECONDS or attempt == MAX_LLM_ATTEMPTS - 1:
+                raise
+            time.sleep(wait + 0.5)
+    raise last_error
 
 
 class AgentState(TypedDict):
@@ -242,8 +290,7 @@ def generate_recommendation(state: AgentState) -> AgentState:
         return state
 
     # ── Full Groq LLM evaluation ──────────────────────────────────────────
-    llm = ChatGroq(model="openai/gpt-oss-120b", temperature=0.1)
-    structured_llm = llm.with_structured_output(AgentRecommendation)
+    structured_llm = make_llm().with_structured_output(AgentRecommendation, include_raw=True)
 
     prompt = ChatPromptTemplate.from_messages([
         ("system",
@@ -265,7 +312,7 @@ def generate_recommendation(state: AgentState) -> AgentState:
     chain = prompt | structured_llm
 
     try:
-        response: AgentRecommendation = chain.invoke({
+        out, tokens_used = invoke_with_budget(chain, {
             "vitals": str(state["current_obs"].vitals),
             "nursing_notes": nursing_notes,
             "news2_score": news2_score,
@@ -273,8 +320,12 @@ def generate_recommendation(state: AgentState) -> AgentState:
             "incomplete_hist": incomplete_hist,
             "retrieved_cases": "\n".join(f"• {g}" for g in retrieved_cases)
         })
+        response: AgentRecommendation = out["parsed"]
+        if response is None:
+            raise ValueError(f"Model output did not match the schema: {out['parsing_error']}")
 
         # Merge state-specific properties
+        response.tokens_used = tokens_used
         response.missing_measurements = state.get("missing_measurements", [])
         response.missing_measurement_risk_score = missing_risk
         response.retrieved_similar_cases = retrieved_cases
@@ -343,13 +394,19 @@ app = graph.compile()
 # Domain-restricted to Emergency Department clinical topics only.
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Matched as whole words/phrases (never substrings) so clinical terms such as
+# "cardiac", "care" or "history of diabetes" are not mistaken for off-topic queries.
 NON_CLINICAL_KEYWORDS = [
-    "java", "python", "javascript", "c++", "html", "css", "code", "programming",
-    "recipe", "cook", "movie", "song", "joke", "poem", "sport", "football", "cricket",
-    "basketball", "weather", "president", "capital of", "solve equation", "who is",
-    "game", "car", "travel", "flight", "hotel", "crypto", "bitcoin", "stock",
-    "netflix", "restaurant", "shopping", "fashion", "music", "history of", "geography"
+    "java", "python", "javascript", "c++", "html", "css", "programming", "script",
+    "recipe", "cook", "movie", "song", "joke", "poem", "football", "cricket",
+    "basketball", "weather", "president", "capital of", "solve equation",
+    "netflix", "restaurant", "shopping", "fashion", "bitcoin", "crypto",
+    "flight", "hotel", "geography"
 ]
+_NON_CLINICAL_PATTERN = re.compile(
+    r"(?<![\w+])(?:" + "|".join(re.escape(w) for w in NON_CLINICAL_KEYWORDS) + r")(?![\w])",
+    re.IGNORECASE,
+)
 
 OUT_OF_DOMAIN_RESPONSE = (
     "I am your ED Clinical Copilot, designed specifically for ward deterioration monitoring, "
@@ -370,9 +427,8 @@ def clinical_chat_assistant(user_message: str, patient_context: str = "") -> dic
     clean_msg = user_message.lower().strip()
 
     # Layer 1: Deterministic keyword pre-filter
-    for word in NON_CLINICAL_KEYWORDS:
-        if word in clean_msg:
-            return {"reply": OUT_OF_DOMAIN_RESPONSE, "out_of_domain": True}
+    if _NON_CLINICAL_PATTERN.search(clean_msg):
+        return {"reply": OUT_OF_DOMAIN_RESPONSE, "out_of_domain": True}
 
     api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
@@ -381,7 +437,7 @@ def clinical_chat_assistant(user_message: str, patient_context: str = "") -> dic
             "out_of_domain": False
         }
 
-    llm = ChatGroq(model="openai/gpt-oss-120b", temperature=0.1)
+    llm = make_llm()
 
     system_instruction = (
         "You are the ED Clinical Copilot, an intelligent clinical decision support assistant "
@@ -413,7 +469,7 @@ def clinical_chat_assistant(user_message: str, patient_context: str = "") -> dic
     try:
         prompt = ChatPromptTemplate.from_messages(messages)
         chain = prompt | llm
-        response = chain.invoke({})
+        response, _ = invoke_with_budget(chain, {})
         reply_text = response.content if hasattr(response, "content") else str(response)
 
         is_ood = OUT_OF_DOMAIN_RESPONSE.strip() in reply_text.strip()

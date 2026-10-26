@@ -7,7 +7,6 @@ langgraph
 langchain-groq
 langchain-core
 sqlalchemy
-pyjwt
 passlib[bcrypt]
 python-jose[cryptography]
 python-multipart
@@ -15,3 +14,5 @@ python-dotenv
 pytest
 httpx
 slowapi
+bcrypt>=4.0.1,<4.1
+websockets

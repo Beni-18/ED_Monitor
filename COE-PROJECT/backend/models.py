@@ -65,6 +65,8 @@ class BatchEvaluationResult(BaseModel):
     high_risk_count: int
     medium_risk_count: int
     low_risk_count: int
+    unknown_risk_count: int = 0
+    failed_count: int = 0
     escalations_created: int
     total_time_seconds: float
 

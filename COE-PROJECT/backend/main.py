@@ -8,7 +8,8 @@ Endpoints:
   GET  /api/patients/{id}      — Get single patient with observations
   GET  /api/patients/{id}/observations — Get time-series observations
   POST /api/evaluate/{id}      — Run AI evaluation on single patient
-  POST /api/evaluate/batch     — Run AI evaluation on all ward patients
+  POST /api/evaluate/batch     — Start background AI evaluation of the whole ward (202 + job)
+  GET  /api/evaluate/batch/{id} — Poll batch job progress/result
   GET  /api/escalations        — List all escalations
   POST /api/escalations/{id}   — Create escalation from evaluation result
   PATCH /api/escalations/{id}/approve — Doctor: approve escalation
@@ -22,16 +23,19 @@ Endpoints:
 import json
 import uuid
 import os
+import random
+import threading
 import time
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import asynccontextmanager
 from datetime import datetime
 
 import asyncio
-from fastapi import FastAPI, HTTPException, Depends, Request, WebSocket, WebSocketDisconnect, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from typing import Literal
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 try:
@@ -54,12 +58,12 @@ from vector_store import initialize_vector_store
 from agent import app as agent_app, clinical_chat_assistant
 from models import (
     AgentRecommendation, Escalation, Patient, PatientObservation,
-    VitalSigns, AuditLog, BatchEvaluationResult, ChatMessageRequest,
+    VitalSigns, ChatMessageRequest,
     ChatMessageResponse
 )
 from database import engine, Base, SessionLocal, get_db
 from models_db import User, PatientDB, ObservationDB, EscalationDB, AuditLogDB
-from auth import get_password_hash, verify_password, create_access_token, require_role, get_current_user
+from auth import get_password_hash, verify_password, create_access_token, require_role, get_current_user, get_user_from_token
 from fastapi.security import OAuth2PasswordRequestForm
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -68,6 +72,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 # /api/performance endpoint. Uses deque for O(1) append/pop.
 # ─────────────────────────────────────────────────────────────────────────────
 _performance_buffer: deque = deque(maxlen=100)
+
+EXPERIMENT_RESULTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "experiment_results.json")
+MAX_OBSERVATIONS_PER_PATIENT = 30
 
 # ─────────────────────────────────────────────────────────────────────────────
 # WEBSOCKET CONNECTION MANAGER
@@ -85,11 +92,11 @@ class ConnectionManager:
             self.active_connections.remove(websocket)
 
     async def broadcast(self, message: dict):
-        for connection in self.active_connections:
+        for connection in list(self.active_connections):
             try:
                 await connection.send_json(message)
             except Exception:
-                pass
+                self.disconnect(connection)
 
 manager = ConnectionManager()
 
@@ -98,8 +105,12 @@ manager = ConnectionManager()
 # ─────────────────────────────────────────────────────────────────────────────
 if RATE_LIMITING_AVAILABLE:
     limiter = Limiter(key_func=get_remote_address)
+    login_rate_limit = limiter.limit("10/minute")
 else:
     limiter = None
+
+    def login_rate_limit(func):
+        return func
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -124,7 +135,7 @@ def log_audit_event(db: Session, username: str, role: str, action: str, details:
 
 def patient_db_to_pydantic(p: PatientDB) -> Patient:
     obs_list = []
-    for obs in p.observations:
+    for obs in sorted(p.observations, key=lambda o: o.timestamp):
         obs_list.append(PatientObservation(
             patient_id=obs.patient_id,
             timestamp=obs.timestamp,
@@ -164,8 +175,6 @@ def esc_db_to_pydantic(e: EscalationDB) -> Escalation:
     )
 
 
-import random
-
 async def live_vitals_simulator():
     """Generates new vitals periodically and triggers auto-escalations (Hybrid AI rules)."""
     while True:
@@ -175,7 +184,10 @@ async def live_vitals_simulator():
         db = SessionLocal()
         try:
             # Pick a random patient
-            patient_id = random.choice([row[0] for row in db.query(PatientDB.id).all()])
+            patient_ids = [row[0] for row in db.query(PatientDB.id).all()]
+            if not patient_ids:
+                continue
+            patient_id = random.choice(patient_ids)
             pdb = db.query(PatientDB).filter(PatientDB.id == patient_id).first()
             if not pdb:
                 continue
@@ -208,6 +220,16 @@ async def live_vitals_simulator():
             db.add(odb)
             db.commit()
 
+            # Keep the observation history bounded so payloads don't grow forever
+            all_ids = [row[0] for row in db.query(ObservationDB.id)
+                       .filter(ObservationDB.patient_id == patient_id)
+                       .order_by(ObservationDB.timestamp.desc()).all()]
+            if len(all_ids) > MAX_OBSERVATIONS_PER_PATIENT:
+                db.query(ObservationDB).filter(
+                    ObservationDB.id.in_(all_ids[MAX_OBSERVATIONS_PER_PATIENT:])
+                ).delete(synchronize_session=False)
+                db.commit()
+
             # Broadcast new vital
             await manager.broadcast({
                 "type": "VITAL_UPDATE",
@@ -225,34 +247,34 @@ async def live_vitals_simulator():
             # ─────────────────────────────────────────────────────────
             # AUTO-TRIGGER HYBRID RULES
             # ─────────────────────────────────────────────────────────
-            needs_eval = False
-            if new_spo2 and new_spo2 < 88:
-                needs_eval = True
-            if new_hr and new_hr > 130:
-                needs_eval = True
-            if new_sys and new_sys < 90:
-                needs_eval = True
+            needs_eval = (
+                (new_spo2 is not None and new_spo2 < 88)
+                or (new_hr is not None and new_hr > 130)
+                or (new_sys is not None and new_sys < 90)
+            )
 
             if needs_eval:
-                # Trigger LangGraph!
+                db.refresh(pdb)
                 patient = patient_db_to_pydantic(pdb)
-                state = {"patient": patient, "current_obs": patient.observations[-1], "node_timings": {}}
-                result = agent_app.invoke(state)
-                rec = result["final_recommendation"]
+                # The graph makes blocking LLM/embedding calls; keep the event loop free
+                rec = await asyncio.to_thread(run_evaluation, patient)
 
                 if rec.risk_level in ["High", "Medium"]:
                     pdb.risk_level = rec.risk_level
-                    existing = db.query(EscalationDB).filter(EscalationDB.patient_id == patient_id, EscalationDB.status == "pending").first()
+                    existing = db.query(EscalationDB).filter(
+                        EscalationDB.patient_id == patient_id,
+                        EscalationDB.status == "pending"
+                    ).first()
                     if not existing:
-                        new_esc = EscalationDB(
+                        db.add(EscalationDB(
                             id=str(uuid.uuid4()),
                             patient_id=patient_id,
                             recommendation_json=rec.model_dump_json(),
                             status="pending",
                             created_at=datetime.now()
-                        )
-                        db.add(new_esc)
-                        db.commit()
+                        ))
+                    db.commit()
+                    if not existing:
                         await manager.broadcast({
                             "type": "NEW_ESCALATION",
                             "patient_id": patient_id,
@@ -381,7 +403,15 @@ app.add_middleware(
 # WEBSOCKET ENDPOINTS
 # ─────────────────────────────────────────────────────────────────────────────
 @app.websocket("/ws/vitals")
-async def websocket_vitals_endpoint(websocket: WebSocket):
+async def websocket_vitals_endpoint(websocket: WebSocket, token: str = ""):
+    db = SessionLocal()
+    try:
+        user = get_user_from_token(token, db)
+    finally:
+        db.close()
+    if user is None:
+        await websocket.close(code=1008)
+        return
     await manager.connect(websocket)
     try:
         while True:
@@ -397,18 +427,12 @@ async def websocket_vitals_endpoint(websocket: WebSocket):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.post("/api/login")
+@login_rate_limit
 def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """
     OAuth2 login endpoint. Rate-limited to 10 attempts/minute per IP to
     prevent brute-force attacks on clinical credentials.
     """
-    # Apply rate limiting if available
-    if RATE_LIMITING_AVAILABLE and limiter:
-        try:
-            limiter.check(request=request, limit_string="10/minute")
-        except Exception:
-            raise HTTPException(status_code=429, detail="Too many login attempts. Please wait before trying again.")
-
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect username or password")
@@ -421,15 +445,15 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "version": "2.3.0"}
+    return {"status": "ok", "version": "2.3.0", "llm_enabled": bool(os.environ.get("GROQ_API_KEY"))}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ADMIN ENDPOINTS (USER MANAGEMENT)
 # ─────────────────────────────────────────────────────────────────────────────
 class UserCreate(BaseModel):
-    username: str
-    password: str
-    role: str
+    username: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=8)
+    role: Literal["Doctor", "Nurse", "Admin"]
 
 @app.get("/api/admin/users")
 def get_users(current_user: User = Depends(require_role(["Admin"])), db: Session = Depends(get_db)):
@@ -471,13 +495,13 @@ def delete_user(user_id: int, current_user: User = Depends(require_role(["Admin"
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/patients")
-def get_patients(db: Session = Depends(get_db)):
+def get_patients(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     patients = db.query(PatientDB).all()
     return [patient_db_to_pydantic(p) for p in patients]
 
 
 @app.get("/api/patients/{patient_id}")
-def get_patient(patient_id: str, db: Session = Depends(get_db)):
+def get_patient(patient_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     p = db.query(PatientDB).filter(PatientDB.id == patient_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -485,7 +509,7 @@ def get_patient(patient_id: str, db: Session = Depends(get_db)):
 
 
 @app.get("/api/patients/{patient_id}/observations")
-def get_observations(patient_id: str, db: Session = Depends(get_db)):
+def get_observations(patient_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     p = db.query(PatientDB).filter(PatientDB.id == patient_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -496,99 +520,156 @@ def get_observations(patient_id: str, db: Session = Depends(get_db)):
 # AI EVALUATION ENDPOINTS
 # ─────────────────────────────────────────────────────────────────────────────
 
-@app.post("/api/evaluate/batch", response_model=BatchEvaluationResult)
-def batch_evaluate_patients(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """
-    Run the AI pipeline across the entire ward.
-    Auto-creates escalations for High/Medium/Unknown risk patients.
-    """
-    start_time = time.time()
-    patients = db.query(PatientDB).all()
+def run_evaluation(patient: Patient) -> AgentRecommendation:
+    """Run the LangGraph pipeline on a patient's latest observation and record timing."""
+    start = time.perf_counter()
+    state = {"patient": patient, "current_obs": patient.observations[-1], "node_timings": {}}
+    result = agent_app.invoke(state)
 
-    high_risk = med_risk = low_risk = 0
-    escalations_created = 0
-    evaluated_count = 0
+    recommendation = result["final_recommendation"]
+    recommendation.latency_ms = round((time.perf_counter() - start) * 1000.0, 2)
+    # tokens_used is the real Groq usage set by the agent (0 when no LLM call was made)
 
-    for pdb in patients:
-        patient = patient_db_to_pydantic(pdb)
-        if not patient.observations:
-            continue
+    _performance_buffer.append({
+        "timestamp": datetime.now().isoformat(),
+        "patient_id": patient.patient_id,
+        "total_latency_ms": recommendation.latency_ms,
+        "tokens_used": recommendation.tokens_used,
+        "risk_level": recommendation.risk_level,
+        "node_timings": recommendation.node_timings or {},
+        "groq_success": recommendation.confidence_score > 0
+    })
+    return recommendation
 
-        latest_obs = patient.observations[-1]
-        state = {"patient": patient, "current_obs": latest_obs, "node_timings": {}}
 
-        try:
-            result = agent_app.invoke(state)
-            recommendation = result["final_recommendation"]
+# ─────────────────────────────────────────────────────────────────────────────
+# BATCH EVALUATION JOBS
+# A ward-wide run makes one LLM call per patient, so it runs as a background job
+# on a worker pool and the UI polls for progress instead of holding a request open.
+# ─────────────────────────────────────────────────────────────────────────────
+BATCH_WORKERS = int(os.environ.get("BATCH_WORKERS", "8"))
+_batch_lock = threading.Lock()
+_batch_jobs: dict[str, dict] = {}
 
-            pdb.risk_level = recommendation.risk_level
-            evaluated_count += 1
 
-            if recommendation.risk_level == "High":
-                high_risk += 1
-            elif recommendation.risk_level == "Medium":
-                med_risk += 1
-            else:
-                low_risk += 1
+def _run_batch_job(job_id: str, username: str, role: str):
+    job = _batch_jobs[job_id]
+    start = time.time()
+    db = SessionLocal()
+    try:
+        patients = [patient_db_to_pydantic(p) for p in db.query(PatientDB).all()]
+        patients = [p for p in patients if p.observations]
+        job["total"] = len(patients)
 
-            if recommendation.risk_level in ["High", "Medium", "Unknown"]:
-                existing = db.query(EscalationDB).filter(
-                    EscalationDB.patient_id == pdb.id,
-                    EscalationDB.status == "pending"
+        recommendations: dict[str, AgentRecommendation] = {}
+        with ThreadPoolExecutor(max_workers=BATCH_WORKERS) as pool:
+            futures = {pool.submit(run_evaluation, p): p.patient_id for p in patients}
+            for fut in as_completed(futures):
+                pid = futures[fut]
+                try:
+                    recommendations[pid] = fut.result()
+                except Exception as e:
+                    job["failed"] += 1
+                    print(f"[BATCH EVAL ERROR] Failed for patient {pid}: {e}")
+                job["completed"] += 1
+
+        # All DB writes happen on this one thread/session
+        counts = {"High": 0, "Medium": 0, "Low": 0, "Unknown": 0}
+        escalations_created = 0
+        llm_failures = 0
+        for pdb in db.query(PatientDB).filter(PatientDB.id.in_(recommendations.keys())).all():
+            rec = recommendations[pdb.id]
+            pdb.risk_level = rec.risk_level
+            counts[rec.risk_level] = counts.get(rec.risk_level, 0) + 1
+            if rec.confidence_score == 0.0:
+                llm_failures += 1
+
+            if rec.risk_level in ("High", "Medium", "Unknown"):
+                has_pending = db.query(EscalationDB.id).filter(
+                    EscalationDB.patient_id == pdb.id, EscalationDB.status == "pending"
                 ).first()
-
-                if not existing:
-                    rec_json = recommendation.model_dump_json()
-                    new_esc = EscalationDB(
+                if not has_pending:
+                    db.add(EscalationDB(
                         id=str(uuid.uuid4()),
                         patient_id=pdb.id,
-                        recommendation_json=rec_json,
+                        recommendation_json=rec.model_dump_json(),
                         status="pending",
                         created_at=datetime.now()
-                    )
-                    db.add(new_esc)
+                    ))
                     escalations_created += 1
+        db.commit()
 
-            # Record to performance buffer
-            _performance_buffer.append({
-                "timestamp": datetime.now().isoformat(),
-                "patient_id": pdb.id,
-                "total_latency_ms": recommendation.latency_ms,
-                "tokens_used": recommendation.tokens_used,
-                "risk_level": recommendation.risk_level,
-                "node_timings": recommendation.node_timings or {},
-                "groq_success": recommendation.confidence_score > 0
-            })
+        elapsed = round(time.time() - start, 2)
+        job["result"] = {
+            "evaluated_count": len(recommendations),
+            "high_risk_count": counts["High"],
+            "medium_risk_count": counts["Medium"],
+            "low_risk_count": counts["Low"],
+            "unknown_risk_count": counts["Unknown"],
+            "failed_count": job["failed"] + llm_failures,
+            "escalations_created": escalations_created,
+            "total_time_seconds": elapsed
+        }
+        log_audit_event(
+            db, username, role, "BATCH_EVALUATION",
+            f"Evaluated {len(recommendations)} patients in {elapsed:.2f}s. "
+            f"High: {counts['High']}, Medium: {counts['Medium']}, Low: {counts['Low']}, "
+            f"Unknown: {counts['Unknown']}. LLM/eval failures: {job['failed'] + llm_failures}. "
+            f"Created {escalations_created} new escalations."
+        )
+        job["status"] = "done"
+    except Exception as e:
+        db.rollback()
+        job["status"] = "error"
+        job["error"] = str(e)
+        print(f"[BATCH JOB ERROR] {e}")
+    finally:
+        job["finished_at"] = datetime.now().isoformat()
+        db.close()
 
-        except Exception as e:
-            print(f"[BATCH EVAL ERROR] Failed for patient {pdb.id}: {e}")
 
-    db.commit()
-    total_time = time.time() - start_time
+def _public_job(job: dict) -> dict:
+    return {k: job.get(k) for k in
+            ("job_id", "status", "total", "completed", "failed", "started_at", "finished_at", "result", "error")}
 
-    log_audit_event(
-        db, current_user.username, current_user.role,
-        "BATCH_EVALUATION",
-        f"Evaluated {evaluated_count} patients in {total_time:.2f}s. "
-        f"High: {high_risk}, Medium: {med_risk}, Low/Other: {low_risk}. "
-        f"Created {escalations_created} new escalations."
-    )
 
-    return {
-        "evaluated_count": evaluated_count,
-        "high_risk_count": high_risk,
-        "medium_risk_count": med_risk,
-        "low_risk_count": low_risk,
-        "escalations_created": escalations_created,
-        "total_time_seconds": round(total_time, 2)
-    }
+@app.post("/api/evaluate/batch", status_code=202)
+def start_batch_evaluation(current_user: User = Depends(get_current_user)):
+    """
+    Start a ward-wide AI evaluation in the background. Returns the job immediately;
+    poll GET /api/evaluate/batch/{job_id}. If a run is already in progress, that job
+    is returned instead of starting a second one.
+    """
+    with _batch_lock:
+        running = next((j for j in _batch_jobs.values() if j["status"] == "running"), None)
+        if running:
+            return _public_job(running)
+        job_id = str(uuid.uuid4())
+        job = {
+            "job_id": job_id, "status": "running", "total": 0, "completed": 0, "failed": 0,
+            "started_at": datetime.now().isoformat(), "finished_at": None, "result": None, "error": None
+        }
+        _batch_jobs[job_id] = job
+        # Keep only the most recent jobs
+        for old_id in list(_batch_jobs)[:-10]:
+            _batch_jobs.pop(old_id, None)
+    threading.Thread(
+        target=_run_batch_job, args=(job_id, current_user.username, current_user.role), daemon=True
+    ).start()
+    return _public_job(job)
+
+
+@app.get("/api/evaluate/batch/{job_id}")
+def get_batch_evaluation(job_id: str, current_user: User = Depends(get_current_user)):
+    job = _batch_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Batch job not found")
+    return _public_job(job)
 
 
 @app.post("/api/evaluate/{patient_id}")
-def evaluate_patient(patient_id: str, db: Session = Depends(get_db)):
+def evaluate_patient(patient_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Run the LangGraph AI pipeline on a single patient."""
-    start_time = time.perf_counter()
-
     pdb = db.query(PatientDB).filter(PatientDB.id == patient_id).first()
     if not pdb:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -597,36 +678,11 @@ def evaluate_patient(patient_id: str, db: Session = Depends(get_db)):
     if not patient.observations:
         raise HTTPException(status_code=400, detail="No observations for this patient")
 
-    latest_obs = patient.observations[-1]
-    state = {"patient": patient, "current_obs": latest_obs, "node_timings": {}}
-
-    result = agent_app.invoke(state)
-    end_time = time.perf_counter()
-    total_latency_ms = round((end_time - start_time) * 1000.0, 2)
-
-    # Token estimation based on input length
-    input_text = latest_obs.nursing_notes or ""
-    rag_text = " ".join(result.get("retrieved_cases", []))
-    tokens_used = (len(input_text) + len(rag_text)) // 4
-
-    recommendation = result["final_recommendation"]
-    recommendation.latency_ms = total_latency_ms
-    recommendation.tokens_used = tokens_used
+    recommendation = run_evaluation(patient)
 
     # Persist risk level to DB
     pdb.risk_level = recommendation.risk_level
     db.commit()
-
-    # Record to performance buffer
-    _performance_buffer.append({
-        "timestamp": datetime.now().isoformat(),
-        "patient_id": patient_id,
-        "total_latency_ms": total_latency_ms,
-        "tokens_used": tokens_used,
-        "risk_level": recommendation.risk_level,
-        "node_timings": recommendation.node_timings or {},
-        "groq_success": recommendation.confidence_score > 0
-    })
 
     return recommendation
 
@@ -636,7 +692,7 @@ def evaluate_patient(patient_id: str, db: Session = Depends(get_db)):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/escalations")
-def get_escalations(db: Session = Depends(get_db)):
+def get_escalations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     escalations = db.query(EscalationDB).all()
     return [esc_db_to_pydantic(e) for e in escalations]
 
@@ -646,7 +702,27 @@ class EscalationRequest(BaseModel):
 
 
 @app.post("/api/escalations/{patient_id}")
-def create_escalation(patient_id: str, req: EscalationRequest, db: Session = Depends(get_db)):
+def create_escalation(
+    patient_id: str,
+    req: EscalationRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not db.query(PatientDB.id).filter(PatientDB.id == patient_id).first():
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    # Re-evaluating a patient must not stack duplicate pending escalations
+    existing = db.query(EscalationDB).filter(
+        EscalationDB.patient_id == patient_id,
+        EscalationDB.status == "pending"
+    ).first()
+    if existing:
+        existing.recommendation_json = req.recommendation.model_dump_json()
+        existing.created_at = datetime.now()
+        db.commit()
+        db.refresh(existing)
+        return esc_db_to_pydantic(existing)
+
     rec_json = req.recommendation.model_dump_json()
     new_esc = EscalationDB(
         id=str(uuid.uuid4()),
@@ -675,6 +751,8 @@ def approve_escalation(
     esc = db.query(EscalationDB).filter(EscalationDB.id == escalation_id).first()
     if not esc:
         raise HTTPException(status_code=404, detail="Escalation not found")
+    if esc.status != "pending":
+        raise HTTPException(status_code=409, detail=f"Escalation already {esc.status}")
 
     esc.status = "approved"
     esc.clinician_notes = body.clinician_notes
@@ -696,6 +774,8 @@ def reject_escalation(
     esc = db.query(EscalationDB).filter(EscalationDB.id == escalation_id).first()
     if not esc:
         raise HTTPException(status_code=404, detail="Escalation not found")
+    if esc.status != "pending":
+        raise HTTPException(status_code=409, detail=f"Escalation already {esc.status}")
 
     esc.status = "rejected"
     esc.clinician_notes = body.clinician_notes
@@ -858,16 +938,16 @@ def clinical_chat_endpoint(
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/metrics")
-def get_metrics(db: Session = Depends(get_db)):
+def get_metrics(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """System metrics — patient counts, risk distribution, AI vs baseline performance."""
     pending_escalations = db.query(EscalationDB).filter(EscalationDB.status == "pending").count()
     total_patients = db.query(PatientDB).count()
 
     experiment_data = {}
     try:
-        with open("experiment_results.json", "r") as f:
+        with open(EXPERIMENT_RESULTS_PATH, "r") as f:
             experiment_data = json.load(f)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.JSONDecodeError):
         pass
 
     return {
