@@ -39,6 +39,7 @@ MAX_RETRY_WAIT_SECONDS = 30
 
 def make_llm() -> ChatGroq:
     # Retries are handled by invoke_with_budget so they respect the shared token budget
+    """Build the Groq chat model (temperature 0.1, configurable reasoning effort). Retries are handled by invoke_with_budget, not the client."""
     return ChatGroq(model=GROQ_MODEL, temperature=0.1, reasoning_effort=REASONING_EFFORT, max_retries=0)
 
 
@@ -73,6 +74,7 @@ def invoke_with_budget(runnable, inputs):
 
 
 class AgentState(TypedDict):
+    """State passed between LangGraph nodes: inputs (patient, current_obs) plus each node's outputs and per-node timings."""
     patient: Patient
     current_obs: PatientObservation
     missing_data_risk: float
@@ -90,6 +92,7 @@ class AgentState(TypedDict):
 # unconsciousness, and distress markers.
 # ─────────────────────────────────────────────────────────────────────────────
 def assess_missing_data(state: AgentState) -> AgentState:
+    """Node 1. Score missing vitals (1.5 each, max 7 vitals) +3 if unconscious +2 if distressed, capped at 10; >= 8 routes straight to generate_recommendation."""
     t_start = time.perf_counter()
 
     obs = state["current_obs"]
@@ -123,6 +126,7 @@ def assess_missing_data(state: AgentState) -> AgentState:
 # Uses the validated NEWS2 clinical scoring algorithm from baseline.py.
 # ─────────────────────────────────────────────────────────────────────────────
 def compute_baseline(state: AgentState) -> AgentState:
+    """Node 2. Compute the NEWS2 score of the latest observation (baseline.calculate_news2)."""
     t_start = time.perf_counter()
 
     obs = state["current_obs"]
@@ -139,6 +143,7 @@ def compute_baseline(state: AgentState) -> AgentState:
 # guidelines using semantic similarity via sentence-transformers.
 # ─────────────────────────────────────────────────────────────────────────────
 def retrieve_context(state: AgentState) -> AgentState:
+    """Node 3 (RAG). Query ChromaDB with the nursing notes (+ incomplete-history/distress flags) for the 3 most similar clinical guidelines."""
     t_start = time.perf_counter()
 
     obs = state["current_obs"]
@@ -160,6 +165,7 @@ def retrieve_context(state: AgentState) -> AgentState:
 # 12-hour observation window. Flags deterioration if ≥2 parameters worsen.
 # ─────────────────────────────────────────────────────────────────────────────
 def analyze_trends(state: AgentState) -> AgentState:
+    """Node 4. Compare first vs last observation: HR +10, SpO2 -2, systolic BP -10, RR +4 each count as worsening; deteriorating if >= 2 worsen or SpO2 falls >= 4 on its own."""
     t_start = time.perf_counter()
 
     patient = state["patient"]
@@ -228,6 +234,7 @@ def analyze_trends(state: AgentState) -> AgentState:
 # heuristics if the API is unavailable or returns an error.
 # ─────────────────────────────────────────────────────────────────────────────
 def generate_recommendation(state: AgentState) -> AgentState:
+    """Node 5. Fast-track 'Unknown' when missing-data risk >= 7; heuristic fallback without an API key; otherwise Groq structured output (AgentRecommendation). LLM failures become Unknown with confidence 0.0 so they are never mistaken for a verdict."""
     t_start = time.perf_counter()
 
     missing_risk = state.get("missing_data_risk", 0.0)

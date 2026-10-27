@@ -1,3 +1,4 @@
+"""database.py — SQLAlchemy engine/session setup. DATABASE_URL overrides the default local SQLite file."""
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
@@ -13,6 +14,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 def get_db():
+    """FastAPI dependency yielding a SQLAlchemy session that is always closed."""
     db = SessionLocal()
     try:
         yield db

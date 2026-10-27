@@ -21,12 +21,15 @@ WINDOW_SECONDS = 60.0
 
 
 class TokenBudget:
+    """Rolling 60-second token budget shared by all LLM callers; reservations are replaced by real usage after each call."""
     def __init__(self, tpm: int, fraction: float):
+        """Limit = tpm * fraction (headroom for other users of the same quota)."""
         self.limit = max(1, int(tpm * fraction))
         self._entries: list[list] = []  # [timestamp, tokens]
         self._lock = threading.Lock()
 
     def _purge(self, now: float):
+        """Drop reservations older than the window."""
         self._entries = [e for e in self._entries if now - e[0] < WINDOW_SECONDS]
 
     def acquire(self, tokens: int = ESTIMATED_TOKENS_PER_CALL) -> list:

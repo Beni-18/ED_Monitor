@@ -1,8 +1,10 @@
+"""models.py — Pydantic models: the API contract and the LangGraph agent's structured output."""
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
 
 class VitalSigns(BaseModel):
+    """One set of vital signs; every field optional because measurements can be missing."""
     hr: Optional[int] = None
     bp_systolic: Optional[int] = None
     bp_diastolic: Optional[int] = None
@@ -12,6 +14,7 @@ class VitalSigns(BaseModel):
     consciousness_level: Optional[str] = None  # AVPU: A, V, P, U
 
 class PatientObservation(BaseModel):
+    """A timestamped vitals reading plus nursing notes and clinical flags."""
     patient_id: str
     timestamp: datetime
     vitals: VitalSigns
@@ -21,6 +24,7 @@ class PatientObservation(BaseModel):
     is_distressed: bool = False
 
 class Patient(BaseModel):
+    """A patient with their observation history and last AI risk level."""
     patient_id: str
     name: str
     bed_number: str
@@ -29,6 +33,7 @@ class Patient(BaseModel):
     risk_level: Optional[str] = None  # Updated after AI evaluation
 
 class AgentRecommendation(BaseModel):
+    """Structured output of the LangGraph agent: risk level, confidence, reasoning, action, NEWS2 score, retrieved guidelines, latency, real token usage and per-node timings."""
     risk_level: str = Field(..., description="Risk level of the patient: 'High', 'Medium', 'Low', or 'Unknown'")
     confidence_score: float = Field(..., description="Confidence score of the recommendation between 0.0 and 1.0")
     missing_measurements: list[str] = Field(default_factory=list, description="List of vital signs that are missing")
@@ -44,6 +49,7 @@ class AgentRecommendation(BaseModel):
 
 
 class Escalation(BaseModel):
+    """An AI escalation awaiting or carrying a clinician decision."""
     id: str
     patient_id: str
     recommendation: AgentRecommendation
@@ -53,6 +59,7 @@ class Escalation(BaseModel):
     resolved_at: Optional[datetime] = None
 
 class AuditLog(BaseModel):
+    """API shape of an audit-log row."""
     id: int
     timestamp: datetime
     username: str
@@ -61,6 +68,7 @@ class AuditLog(BaseModel):
     details: str
 
 class BatchEvaluationResult(BaseModel):
+    """Summary of a completed ward batch evaluation (counts per risk level, failures, escalations created, duration)."""
     evaluated_count: int
     high_risk_count: int
     medium_risk_count: int
@@ -71,10 +79,12 @@ class BatchEvaluationResult(BaseModel):
     total_time_seconds: float
 
 class ChatMessageRequest(BaseModel):
+    """Clinical Copilot request: the question and an optional selected patient id for context."""
     message: str
     patient_id: Optional[str] = None
 
 class ChatMessageResponse(BaseModel):
+    """Clinical Copilot reply, whether it was refused as out-of-domain, and the context given to the model."""
     reply: str
     out_of_domain: bool = False
     context_used: Optional[str] = None

@@ -1,3 +1,4 @@
+"""auth.py — JWT authentication (HS256, 24 h) and role-based access control for the API."""
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -19,12 +20,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
 def verify_password(plain_password, hashed_password):
+    """Constant-time bcrypt check of a plaintext password against its stored hash."""
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
+    """bcrypt-hash a password for storage."""
     return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """Sign a JWT (HS256) with an `exp` claim; defaults to ACCESS_TOKEN_EXPIRE_MINUTES (24 h)."""
     to_encode = data.copy()
     # Use the configured expiry constant if no override is provided
     expire = datetime.now(timezone.utc) + (expires_delta if expires_delta else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
@@ -44,6 +48,7 @@ def get_user_from_token(token: str, db: Session) -> Optional[User]:
     return db.query(User).filter(User.username == username).first()
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """FastAPI dependency: resolve the Bearer token to a User or raise 401."""
     user = get_user_from_token(token, db)
     if user is None:
         raise HTTPException(
@@ -54,7 +59,9 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 def require_role(allowed_roles: list[str]):
+    """Dependency factory: allow only users whose role is in `allowed_roles`, else 403 (RBAC)."""
     def role_checker(current_user: User = Depends(get_current_user)):
+        """Inner dependency produced by require_role."""
         if current_user.role not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

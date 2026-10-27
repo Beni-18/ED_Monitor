@@ -372,3 +372,11 @@ COE-PROJECT/
 - **UI behaviour:** live-feed auto-reconnect and status indicator, header reports whether the LLM is actually enabled (`/api/health.llm_enabled`), accessible nav buttons, delete-user confirmation, own-account delete disabled, metrics panel shows hold-out vs dev results with confidence intervals.
 - **Tests:** 46 tests (batch job lifecycle, throttle, 429 parsing added); `conftest.py` exits cleanly after pytest's summary to avoid an intermittent onnxruntime abort (exit 134) at interpreter teardown.
 
+---
+
+### ✅ Phase 23 — Review 2 Feedback: Error Boundaries, Documentation, Complete Benchmark — **COMPLETED**
+- **Error boundaries:** frontend per-view `catchError` boundaries (`ViewBoundary`), `error.js`, `global-error.js`, `not-found.js`; backend `error_boundary_middleware` returning a generic JSON 500 with `request_id`/`X-Request-ID` while preserving CORS headers. Verified by forcing a render crash (only the Metrics view failed) and by two new API tests.
+- **Documentation:** root `README.md` (setup, configuration, architecture, full API table with access levels, database schema, granular test inventory, error-handling matrix, security summary, evaluation limits); docstrings added to every backend module, class and function.
+- **Tests:** 50 passing (26 unit, 24 integration).
+- **Benchmark (complete, 0 LLM failures):** hold-out sensitivity 100 % (CI 91–100) vs NEWS2 62.5 % (47–76), false-alert rate 25 % vs 0 %, F1 88.9 % vs 76.9 %. Known weakness: 90 % false alerts on chronic-COPD baseline patients.
+

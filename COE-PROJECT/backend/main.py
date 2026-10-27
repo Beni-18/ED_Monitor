@@ -21,6 +21,7 @@ Endpoints:
   GET  /api/performance        — LangGraph node latency profiling
 """
 import json
+import logging
 import uuid
 import os
 import random
@@ -34,6 +35,7 @@ from datetime import datetime
 import asyncio
 from fastapi import FastAPI, HTTPException, Depends, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from typing import Literal
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -80,18 +82,23 @@ MAX_OBSERVATIONS_PER_PATIENT = 30
 # WEBSOCKET CONNECTION MANAGER
 # ─────────────────────────────────────────────────────────────────────────────
 class ConnectionManager:
+    """Tracks connected /ws/vitals clients and fans out JSON events (VITAL_UPDATE, NEW_ESCALATION) to all of them."""
     def __init__(self):
+        """Start with no connected WebSocket clients."""
         self.active_connections: list[WebSocket] = []
 
     async def connect(self, websocket: WebSocket):
+        """Accept the WebSocket handshake and register the client."""
         await websocket.accept()
         self.active_connections.append(websocket)
 
     def disconnect(self, websocket: WebSocket):
+        """Forget a client (safe to call twice)."""
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
 
     async def broadcast(self, message: dict):
+        """Send `message` to every client; clients whose socket has died are dropped."""
         for connection in list(self.active_connections):
             try:
                 await connection.send_json(message)
@@ -134,6 +141,7 @@ def log_audit_event(db: Session, username: str, role: str, action: str, details:
 
 
 def patient_db_to_pydantic(p: PatientDB) -> Patient:
+    """Map a PatientDB row (with its observations, sorted by timestamp) to the API/agent `Patient` model."""
     obs_list = []
     for obs in sorted(p.observations, key=lambda o: o.timestamp):
         obs_list.append(PatientObservation(
@@ -164,6 +172,7 @@ def patient_db_to_pydantic(p: PatientDB) -> Patient:
 
 
 def esc_db_to_pydantic(e: EscalationDB) -> Escalation:
+    """Map an EscalationDB row to the API model, parsing the stored recommendation JSON snapshot."""
     return Escalation(
         id=e.id,
         patient_id=e.patient_id,
@@ -391,6 +400,34 @@ if RATE_LIMITING_AVAILABLE:
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+logger = logging.getLogger("ed_monitor")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BACKEND ERROR BOUNDARY
+# Any exception not already turned into an HTTPException is logged with a request id and
+# returned as a generic JSON 500 (no stack trace or internals leak to the client).
+# This middleware is registered BEFORE CORSMiddleware so CORS wraps it: error responses
+# still carry CORS headers, so the browser reports the real status instead of an opaque
+# "CORS error" (the symptom of the original /api/escalations crash).
+# ─────────────────────────────────────────────────────────────────────────────
+@app.middleware("http")
+async def error_boundary_middleware(request: Request, call_next):
+    """Log any unhandled exception and return a generic JSON 500 carrying an X-Request-ID."""
+    request_id = uuid.uuid4().hex[:12]
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception("Unhandled error [request_id=%s] %s %s", request_id, request.method, request.url.path)
+        response = JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error", "request_id": request_id},
+        )
+    response.headers["X-Request-ID"] = request_id
+    return response
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -404,6 +441,7 @@ app.add_middleware(
 # ─────────────────────────────────────────────────────────────────────────────
 @app.websocket("/ws/vitals")
 async def websocket_vitals_endpoint(websocket: WebSocket, token: str = ""):
+    """Live feed. Requires ?token=<JWT>; closes with code 1008 if invalid. Server pushes events; client messages are ignored."""
     db = SessionLocal()
     try:
         user = get_user_from_token(token, db)
@@ -445,23 +483,27 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
 
 @app.get("/api/health")
 def health_check():
+    """Unauthenticated liveness probe; also reports whether a Groq key is configured (`llm_enabled`)."""
     return {"status": "ok", "version": "2.3.0", "llm_enabled": bool(os.environ.get("GROQ_API_KEY"))}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ADMIN ENDPOINTS (USER MANAGEMENT)
 # ─────────────────────────────────────────────────────────────────────────────
 class UserCreate(BaseModel):
+    """Request body for creating a user: non-empty username, password >= 8 chars, role limited to Doctor/Nurse/Admin."""
     username: str = Field(..., min_length=1)
     password: str = Field(..., min_length=8)
     role: Literal["Doctor", "Nurse", "Admin"]
 
 @app.get("/api/admin/users")
 def get_users(current_user: User = Depends(require_role(["Admin"])), db: Session = Depends(get_db)):
+    """Admin only: list all users (id, username, role; never the password hash)."""
     users = db.query(User).all()
     return [{"id": u.id, "username": u.username, "role": u.role} for u in users]
 
 @app.post("/api/admin/users")
 def create_user(user: UserCreate, current_user: User = Depends(require_role(["Admin"])), db: Session = Depends(get_db)):
+    """Admin only: create a user with a bcrypt-hashed password; 400 if the username exists. Audit-logged."""
     existing = db.query(User).filter(User.username == user.username).first()
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
@@ -478,6 +520,7 @@ def create_user(user: UserCreate, current_user: User = Depends(require_role(["Ad
 
 @app.delete("/api/admin/users/{user_id}")
 def delete_user(user_id: int, current_user: User = Depends(require_role(["Admin"])), db: Session = Depends(get_db)):
+    """Admin only: delete a user by id; an admin cannot delete their own account. Audit-logged."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -496,12 +539,14 @@ def delete_user(user_id: int, current_user: User = Depends(require_role(["Admin"
 
 @app.get("/api/patients")
 def get_patients(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """List every patient with all observations and the latest persisted AI risk level."""
     patients = db.query(PatientDB).all()
     return [patient_db_to_pydantic(p) for p in patients]
 
 
 @app.get("/api/patients/{patient_id}")
 def get_patient(patient_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Return one patient with observations; 404 if unknown."""
     p = db.query(PatientDB).filter(PatientDB.id == patient_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -510,6 +555,7 @@ def get_patient(patient_id: str, current_user: User = Depends(get_current_user),
 
 @app.get("/api/patients/{patient_id}/observations")
 def get_observations(patient_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Return only the patient's observation time series; 404 if the patient is unknown."""
     p = db.query(PatientDB).filter(PatientDB.id == patient_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -553,6 +599,7 @@ _batch_jobs: dict[str, dict] = {}
 
 
 def _run_batch_job(job_id: str, username: str, role: str):
+    """Worker thread for a ward batch: evaluate patients concurrently, then persist risk levels and create pending escalations (High/Medium/Unknown) on this single thread/session."""
     job = _batch_jobs[job_id]
     start = time.time()
     db = SessionLocal()
@@ -629,6 +676,7 @@ def _run_batch_job(job_id: str, username: str, role: str):
 
 
 def _public_job(job: dict) -> dict:
+    """Subset of a batch-job record that is safe to return to clients."""
     return {k: job.get(k) for k in
             ("job_id", "status", "total", "completed", "failed", "started_at", "finished_at", "result", "error")}
 
@@ -661,6 +709,7 @@ def start_batch_evaluation(current_user: User = Depends(get_current_user)):
 
 @app.get("/api/evaluate/batch/{job_id}")
 def get_batch_evaluation(job_id: str, current_user: User = Depends(get_current_user)):
+    """Poll a batch job: status (running/done/error), completed/total counts, and the result once done."""
     job = _batch_jobs.get(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Batch job not found")
@@ -693,11 +742,13 @@ def evaluate_patient(patient_id: str, current_user: User = Depends(get_current_u
 
 @app.get("/api/escalations")
 def get_escalations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """List all escalations (pending, approved, rejected) with their stored recommendation snapshots."""
     escalations = db.query(EscalationDB).all()
     return [esc_db_to_pydantic(e) for e in escalations]
 
 
 class EscalationRequest(BaseModel):
+    """Request body wrapping the AgentRecommendation to snapshot into a new escalation."""
     recommendation: AgentRecommendation
 
 
@@ -708,6 +759,7 @@ def create_escalation(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Create a pending escalation for a patient (404 if unknown). If one is already pending, refresh it instead of stacking duplicates."""
     if not db.query(PatientDB.id).filter(PatientDB.id == patient_id).first():
         raise HTTPException(status_code=404, detail="Patient not found")
 
@@ -738,6 +790,7 @@ def create_escalation(
 
 
 class ClinicianNotes(BaseModel):
+    """Request body for approve/reject: the clinician's free-text note, stored on the escalation."""
     clinician_notes: str
 
 
@@ -748,6 +801,7 @@ def approve_escalation(
     current_user: User = Depends(require_role(["Doctor"])),
     db: Session = Depends(get_db)
 ):
+    """Doctor only: mark a pending escalation approved and record notes/time; 409 if already resolved. Audit-logged."""
     esc = db.query(EscalationDB).filter(EscalationDB.id == escalation_id).first()
     if not esc:
         raise HTTPException(status_code=404, detail="Escalation not found")
@@ -771,6 +825,7 @@ def reject_escalation(
     current_user: User = Depends(require_role(["Doctor"])),
     db: Session = Depends(get_db)
 ):
+    """Doctor only: mark a pending escalation rejected and record notes/time; 409 if already resolved. Audit-logged."""
     esc = db.query(EscalationDB).filter(EscalationDB.id == escalation_id).first()
     if not esc:
         raise HTTPException(status_code=404, detail="Escalation not found")

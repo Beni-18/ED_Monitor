@@ -1,6 +1,8 @@
+"""baseline.py — NEWS2 early-warning score, the deterministic baseline the AI agent is benchmarked against."""
 from models import VitalSigns
 
 def calculate_news2(vitals: VitalSigns) -> dict:
+    """NEWS2 (Royal College of Physicians scale 1) over the vitals that are present: RR, SpO2, systolic BP, HR, temperature, AVPU. Missing vitals add 0 (a known NEWS2 limitation). Returns total, per-parameter scores and risk (>=7 High, >=5 Medium, else Low). Not implemented: the supplemental-oxygen item and SpO2 scale 2 (chronic hypercapnic respiratory failure)."""
     score = 0
     details = {}
     

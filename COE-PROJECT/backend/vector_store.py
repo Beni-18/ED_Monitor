@@ -1,3 +1,4 @@
+"""vector_store.py — ChromaDB store of clinical guidelines used for retrieval-augmented generation."""
 import chromadb
 from chromadb.utils import embedding_functions
 from dataset import CLINICAL_GUIDELINES
@@ -17,6 +18,7 @@ _collection = None
 
 
 def get_client():
+    """Process-wide ChromaDB persistent client (created once)."""
     global _client
     with _lock:
         if _client is None:
@@ -25,6 +27,7 @@ def get_client():
 
 
 def _get_emb_fn():
+    """Process-wide default embedding function (loading the model is expensive)."""
     global _emb_fn
     with _lock:
         if _emb_fn is None:
@@ -33,6 +36,7 @@ def _get_emb_fn():
 
 
 def _get_collection():
+    """Process-wide handle to the clinical_guidelines collection."""
     global _collection
     if _collection is None:
         client, emb_fn = get_client(), _get_emb_fn()
@@ -42,6 +46,7 @@ def _get_collection():
     return _collection
 
 def initialize_vector_store():
+    """Create the guideline collection, or rebuild it if the number of stored guidelines differs from CLINICAL_GUIDELINES."""
     global _collection
     client = get_client()
     emb_fn = _get_emb_fn()
@@ -75,6 +80,7 @@ def initialize_vector_store():
         print(f"Vector store already initialized with {current_count} guidelines.")
 
 def retrieve_similar_cases(query: str, n_results: int = 3) -> list[str]:
+    """Return the `n_results` guidelines most semantically similar to `query`."""
     collection = _get_collection()
     results = collection.query(
         query_texts=[query],

@@ -17,6 +17,9 @@ import MetricsView from '../components/MetricsView';
 import AuditView from '../components/AuditView';
 import AdminView from '../components/AdminView';
 import ChatWidget from '../components/ChatWidget';
+import ViewBoundary from '../components/ViewBoundary';
+
+const views = { overview: 'OVERVIEW', patients: 'PATIENTS', inbox: 'INBOX', metrics: 'METRICS', audit: 'AUDIT LOG', admin: 'ADMIN' };
 
 export default function Dashboard() {
   const auth = useAuth();
@@ -51,6 +54,7 @@ export default function Dashboard() {
         <StatsBar patientCount={ward.patients.length} highRiskCount={ward.highRiskCount}
           pendingCount={ward.pendingCount} metrics={ward.metrics} />
 
+        <ViewBoundary key={tab} name={views[tab] || tab.toUpperCase()}>
         {tab === 'overview' && (
           <OverviewView patients={ward.patients} selectedPatient={ward.selectedPatient}
             selectedPatientId={ward.selectedPatientId} onSelect={ward.setSelectedPatientId}
@@ -76,6 +80,7 @@ export default function Dashboard() {
           <AdminView users={ward.adminUsers} currentUsername={auth.username}
             onAdd={ward.addUser} onDelete={ward.deleteUser} />
         )}
+        </ViewBoundary>
       </main>
 
       <footer className={s.footer}>
@@ -85,7 +90,9 @@ export default function Dashboard() {
         </div>
       </footer>
 
-      <ChatWidget authFetch={auth.authFetch} selectedPatient={ward.selectedPatient} />
+      <ViewBoundary name="CHAT">
+        <ChatWidget authFetch={auth.authFetch} selectedPatient={ward.selectedPatient} />
+      </ViewBoundary>
     </div>
   );
 }

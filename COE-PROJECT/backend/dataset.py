@@ -1,3 +1,4 @@
+"""dataset.py — synthetic patient generators (development corpus and hold-out benchmark) and the clinical guideline corpus for RAG."""
 import random
 from datetime import datetime, timedelta
 from models import Patient, PatientObservation, VitalSigns
@@ -16,10 +17,12 @@ _LAST_NAMES = [
 ]
 
 def _random_name(seed: int) -> str:
+    """Deterministic synthetic patient name for a seed."""
     random.seed(seed * 7 + 13)
     return f"{random.choice(_FIRST_NAMES)} {random.choice(_LAST_NAMES)}"
 
 def generate_patients(scale_factor: int = 1) -> list[Patient]:
+    """Development corpus: 8 archetypes x scale_factor (stable, obvious deterioration, subtle sepsis, severe missing data, silent hypoxia, compensated shock, drug-induced bradycardia, elderly frail); scale 10 gives 170 patients."""
     base_time = datetime.now() - timedelta(hours=24)
     patients = []
     name_seed = 1
@@ -349,16 +352,19 @@ HOLDOUT_NEGATIVE = {"anxious", "fever_settling", "copd_baseline", "well_fit"}
 
 
 def generate_holdout_patients(per_archetype: int = 10, seed: int = 2026) -> list[Patient]:
+    """Randomised hold-out benchmark (see block comment above). Uses a private seeded RNG so the set is reproducible."""
     rng = random.Random(seed)  # private RNG: never touches the global random state
     base_time = datetime.now() - timedelta(hours=24)
     first = [n for n in _FIRST_NAMES]
     last = [n for n in _LAST_NAMES]
 
     def lerp(a, b, frac):
+        """Linear interpolation from a to b by fraction."""
         return a + (b - a) * frac
 
     # name -> (notes variants early, notes variants late, vitals(frac, k, rng) -> VitalSigns)
     def v(hr, sbp, rr, temp, spo2, avpu="A"):
+        """Build a VitalSigns with sensible rounding."""
         return VitalSigns(
             hr=int(round(hr)), bp_systolic=int(round(sbp)), bp_diastolic=int(round(sbp * 0.62)),
             resp_rate=int(round(rr)), temp=round(temp, 1), spo2=round(min(spo2, 100.0), 1),

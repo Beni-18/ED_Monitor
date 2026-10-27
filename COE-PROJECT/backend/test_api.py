@@ -305,3 +305,30 @@ def test_websocket_requires_valid_token(doctor_token):
             pass
     with client.websocket_connect(f"/ws/vitals?token={doctor_token}"):
         pass
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ERROR BOUNDARY
+# ─────────────────────────────────────────────────────────────────────────────
+
+def test_unhandled_error_returns_generic_json_500_with_cors():
+    """An unexpected exception must not leak internals and must keep CORS headers."""
+    def boom():
+        raise RuntimeError("secret internal detail: /etc/passwd")
+
+    app.add_api_route("/api/_test_boom", boom, methods=["GET"])
+    res = client.get("/api/_test_boom", headers={"Origin": "http://localhost:3000"})
+    assert res.status_code == 500
+    body = res.json()
+    assert body["detail"] == "Internal server error"
+    assert "secret internal detail" not in res.text
+    assert body["request_id"] == res.headers["X-Request-ID"]
+    assert res.headers.get("access-control-allow-origin") in ("*", "http://localhost:3000")
+
+
+def test_validation_errors_are_422_not_500(doctor_token):
+    """Malformed request bodies are rejected by Pydantic before reaching business logic."""
+    headers = {"Authorization": f"Bearer {doctor_token}"}
+    res = client.post("/api/chat", json={"nope": 1}, headers=headers)
+    assert res.status_code == 422
+    assert client.get("/api/patients/does-not-exist", headers=headers).status_code == 404
